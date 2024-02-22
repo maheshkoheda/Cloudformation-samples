@@ -1,0 +1,62 @@
+#Parameters will give drop down with values to choose from while creating stack.
+#In below example users can choose instance type and keypairs.
+Parameters:
+  NameOfService:
+    Description: "The name of service this stack is to be used for."
+    Type: String 
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - m1.small
+      - m1.large
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+#Prerequisite - Create keypairs in aws 
+  KeyName:
+    Description: Name of EC2 login key 
+    Type: AWS::EC2::KeyPair::KeyName
+Mappings: 
+  AmiRegionMap: 
+    us-east-1: 
+      AMI: "ami-0440d3b780d96b29d"
+    us-west-1: 
+      AMI: "ami-07619059e86eaaaa2"
+    eu-west-1: 
+      AMI: "ami-0ef9e689241f0bb6e"
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance 
+    Properties:
+      InstanceType: !Ref InstanceTypeParameter
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+       - AmiRegionMap
+       - !Ref AWS::Region 
+       - AMI 
+      Tags:
+        - Key: "Name"
+          Value: !Ref NameOfService
+      SecurityGroups:
+        - !Ref VprofileSG
+
+  VprofileSG:
+   Type: AWS::EC2::SecurityGroup
+   Properties:
+     GroupDescription: Allow ssh & http from MyIP
+     SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+#Output will print the Attributes we define.
+Outputs:
+  PrintSomeInfo:
+    Value: !GetAtt
+      - MyInstance
+      - PublicDnsName
